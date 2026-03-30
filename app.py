@@ -64,14 +64,29 @@ def default_num_images(post_type):
     return 3
 
 
+def network_style_rules(selected_networks):
+    style_map = {
+        "Instagram": "Copy mais emocional, envolvente, direto e com ritmo. Deve captar atenção rapidamente e gerar interação.",
+        "LinkedIn": "Copy mais reflexivo, profissional, estratégico e credível. Deve reforçar autoridade e posicionamento.",
+        "Facebook": "Copy mais próximo, claro, acessível e comunitário. Deve ser fácil de ler e gerar identificação."
+    }
+
+    rules = []
+    for network in selected_networks:
+        if network in style_map:
+            rules.append(f"- {network}: {style_map[network]}")
+    return "\n".join(rules)
+
+
 def build_master_angle(data):
     service_focus = data.get("service_focus", "").strip()
     tone = data.get("tone", "profissional").strip()
+    selected_networks = ", ".join(data["networks"])
 
     return (
         f"Conteúdo orientado para {data['objective'].lower()}, centrado no tema '{data['theme']}', "
         f"dirigido a {data['audience'].lower()}, com foco em {service_focus.lower() if service_focus else 'posicionamento da DEFERA'}, "
-        f"num registo {tone.lower()} e com chamada à ação orientada para '{data['cta']}'."
+        f"num registo {tone.lower()}, pensado para {selected_networks} e com chamada à ação orientada para '{data['cta']}'."
     )
 
 
@@ -84,7 +99,7 @@ def build_headlines(data):
     ]
 
 
-def build_hashtags(data):
+def build_hashtags():
     return [
         "#DEFERA",
         "#MarketingDesportivo",
@@ -122,7 +137,7 @@ def build_structure(data):
             {"title": "Desenvolvimento", "message": "Desenvolver a ideia com clareza e ritmo"},
             {"title": "Fecho", "message": f"Terminar com CTA orientado para {cta.lower()}"}
         ]
-    else:  # Reel
+    else:
         base = [
             {"title": "Abertura", "message": f"Frame inicial para captar atenção sobre {theme.lower()}"},
             {"title": "Desenvolvimento", "message": "Frame intermédio para desenvolver a narrativa"},
@@ -149,18 +164,21 @@ def build_structure(data):
 
 
 def build_master_prompt(data, structure):
+    networks_text = ", ".join(data["networks"])
+    network_rules = network_style_rules(data["networks"])
+
     return f"""
-Atua como copywriter estratégico especializado em marketing desportivo e cria conteúdo para a marca DEFERA.
+Atua como copywriter estratégico e diretor criativo especializado em marketing desportivo e cria conteúdo para a marca DEFERA.
 
 Contexto da marca:
 - Marca: {DEFERA_BRAND_GUIDE['marca']}
-- Tom: {DEFERA_BRAND_GUIDE['tom']}
+- Tom base: {DEFERA_BRAND_GUIDE['tom']}
 - Linguagem: {DEFERA_BRAND_GUIDE['linguagem']}
 - Identidade visual: {DEFERA_BRAND_GUIDE['visual']}
 
 Briefing:
 - Objetivo: {data['objective']}
-- Rede social principal: {data['network']}
+- Redes sociais selecionadas: {networks_text}
 - Formato: {data['post_type']}
 - Categoria: {data['category']}
 - Tema: {data['theme']}
@@ -170,57 +188,31 @@ Briefing:
 - Estilo visual: {data['visual_style']}
 - CTA: {data['cta']}
 - Notas adicionais: {data['context_notes']}
+- Número de peças/slides/frames: {data['num_images']}
 
 Estrutura sugerida:
 {json.dumps(structure, ensure_ascii=False, indent=2)}
 
-Entrega:
-1. Copy final para Instagram
-2. Copy final para LinkedIn
-3. Copy final para Facebook
-4. 3 headlines alternativas
-5. 8 hashtags coerentes
-6. Texto curto por slide/frame, alinhado com a estrutura
+Adaptação obrigatória por rede social:
+{network_rules}
+
+Entrega exatamente nesta ordem:
+1. Ângulo estratégico do conteúdo
+2. 3 headlines alternativas
+3. 8 hashtags coerentes
+4. Estrutura final por peça/slide/frame
+5. Copy separado por rede social selecionada
+6. Prompt visual geral para gerar imagens
+7. Prompt visual específico por peça/slide/frame
 
 Regras:
-- Escrever em português de Portugal
+- Escrever sempre em português de Portugal
 - Soar natural e humano
-- Instagram mais emocional e envolvente
-- LinkedIn mais reflexivo e profissional
-- Facebook mais direto e acessível
+- Respeitar diferenças claras entre as redes sociais selecionadas
+- Se Instagram e LinkedIn estiverem ambos selecionados, o copy deve ser claramente diferente entre ambos
 - Não usar tom excessivamente institucional
-""".strip()
-
-
-def build_network_prompt(network, data, structure):
-    style_map = {
-        "Instagram": "emocional, envolvente, direto e com ritmo",
-        "LinkedIn": "reflexivo, profissional, estratégico e credível",
-        "Facebook": "próximo, claro, acessível e com boa legibilidade"
-    }
-
-    return f"""
-Cria um texto para {network} para a marca DEFERA.
-
-Briefing:
-- Tema: {data['theme']}
-- Objetivo: {data['objective']}
-- Público-alvo: {data['audience']}
-- Formato: {data['post_type']}
-- Categoria: {data['category']}
-- Serviço/foco: {data['service_focus']}
-- CTA: {data['cta']}
-- Tom desejado: {data['tone']}
-- Estilo específico para este canal: {style_map[network]}
-
-Estrutura base:
-{json.dumps(structure, ensure_ascii=False, indent=2)}
-
-Regras:
-- Português de Portugal
-- Escrita natural
-- Coerente com a identidade da DEFERA
-- Evitar clichés e excesso de formalismo
+- Não incluir explicações sobre o processo
+- Organizar a resposta com títulos claros
 """.strip()
 
 
@@ -246,7 +238,7 @@ Estrutura pretendida:
 {json.dumps(structure, ensure_ascii=False, indent=2)}
 
 Entrega:
-- Um prompt visual geral para Canva AI ou outra ferramenta visual
+- Um prompt visual geral
 - Um prompt visual por slide/frame
 - Sugestão de composição, ambiente, enquadramento, luz e elementos visuais
 - Sem texto embutido nas imagens
@@ -272,14 +264,13 @@ def build_canva_prompts(data, structure):
 
 def build_publication_checklist():
     return [
-        "Validar se o copy está adaptado ao canal certo",
+        "Validar se o copy está adaptado a cada rede selecionada",
         "Confirmar coerência com a identidade visual da DEFERA",
         "Verificar se a chamada à ação está clara",
-        "Gerar ou ajustar imagens no Canva",
+        "Gerar ou ajustar imagens com base nos prompts",
         "Rever ortografia e legibilidade final",
         "Descarregar criativos e copy final",
-        "Inserir manualmente no Business Suite",
-        "Agendar ou publicar"
+        "Publicar manualmente no canal adequado"
     ]
 
 
@@ -289,12 +280,9 @@ def build_pack(data):
     return {
         "master_angle": build_master_angle(data),
         "headlines": build_headlines(data),
-        "hashtags": build_hashtags(data),
+        "hashtags": build_hashtags(),
         "structure": structure,
         "master_prompt": build_master_prompt(data, structure),
-        "instagram_prompt": build_network_prompt("Instagram", data, structure),
-        "linkedin_prompt": build_network_prompt("LinkedIn", data, structure),
-        "facebook_prompt": build_network_prompt("Facebook", data, structure),
         "visual_prompt": build_visual_prompt(data, structure),
         "canva_prompts": build_canva_prompts(data, structure),
         "publication_checklist": build_publication_checklist(),
@@ -306,18 +294,15 @@ def build_zip_bytes(pack):
 
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("pack_completo.json", json.dumps(pack, ensure_ascii=False, indent=2))
-        zf.writestr("01_master_prompt.txt", pack["master_prompt"])
-        zf.writestr("02_instagram_prompt.txt", pack["instagram_prompt"])
-        zf.writestr("03_linkedin_prompt.txt", pack["linkedin_prompt"])
-        zf.writestr("04_facebook_prompt.txt", pack["facebook_prompt"])
-        zf.writestr("05_visual_prompt.txt", pack["visual_prompt"])
-        zf.writestr("06_checklist_publicacao.txt", "\n".join(pack["publication_checklist"]))
-        zf.writestr("07_headlines.txt", "\n".join(pack["headlines"]))
-        zf.writestr("08_hashtags.txt", " ".join(pack["hashtags"]))
+        zf.writestr("01_prompt_mestre.txt", pack["master_prompt"])
+        zf.writestr("02_prompt_visual.txt", pack["visual_prompt"])
+        zf.writestr("03_checklist_publicacao.txt", "\n".join(pack["publication_checklist"]))
+        zf.writestr("04_headlines.txt", "\n".join(pack["headlines"]))
+        zf.writestr("05_hashtags.txt", " ".join(pack["hashtags"]))
 
         for item in pack["canva_prompts"]:
             zf.writestr(
-                f"canva_prompts/slide_{item['slide_number']}.txt",
+                f"prompts_visuais/slide_{item['slide_number']}.txt",
                 item["prompt"]
             )
 
@@ -328,25 +313,24 @@ def build_zip_bytes(pack):
 init_state()
 
 st.title("DEFERA Social Planner")
-st.caption("Ferramenta sem API para gerar prompts, estrutura editorial e brief visual prontos a usar no ChatGPT e no Canva")
+st.caption("Ferramenta para gerar um prompt mestre único, ajustado ao briefing e às redes sociais selecionadas")
 
 with st.sidebar:
     st.subheader("Modo de utilização")
     st.write(
         "1. Preencher o briefing\n"
-        "2. Gerar o pack\n"
-        "3. Copiar os prompts para o ChatGPT\n"
-        "4. Usar os prompts visuais no Canva\n"
-        "5. Publicar manualmente no Business Suite"
+        "2. Selecionar uma ou várias redes sociais\n"
+        "3. Gerar o prompt mestre\n"
+        "4. Colar o prompt no ChatGPT\n"
+        "5. Obter copy e imagens com base nesse prompt"
     )
-    st.info("Esta versão não usa API e não gera custos adicionais.")
 
 with st.form("planner_form"):
     col1, col2 = st.columns(2)
 
     with col1:
         objective = st.text_input("Objetivo", placeholder="Ex: gerar leads para serviços de marketing desportivo")
-        network = st.selectbox("Rede social principal", NETWORKS)
+        networks = st.multiselect("Redes sociais", NETWORKS, default=["Instagram"])
         post_type = st.selectbox("Formato", POST_TYPES)
         category = st.selectbox("Categoria", CONTENT_CATEGORIES)
         theme = st.text_input("Tema", placeholder="Ex: muitos clubes continuam a comunicar sem estratégia")
@@ -366,15 +350,17 @@ with st.form("planner_form"):
         value=default_num_images(post_type)
     )
 
-    submitted = st.form_submit_button("Gerar pack")
+    submitted = st.form_submit_button("Gerar prompt mestre")
 
 if submitted:
     if not objective or not theme or not audience:
         st.error("Preencha pelo menos objetivo, tema e público.")
+    elif not networks:
+        st.error("Selecione pelo menos uma rede social.")
     else:
         data = {
             "objective": objective,
-            "network": network,
+            "networks": networks,
             "post_type": post_type,
             "category": category,
             "theme": theme,
@@ -388,7 +374,7 @@ if submitted:
         }
 
         st.session_state.generated_pack = build_pack(data)
-        st.success("Pack gerado com sucesso.")
+        st.success("Prompt mestre gerado com sucesso.")
 
 pack = st.session_state.generated_pack
 
@@ -397,29 +383,23 @@ if pack:
     st.subheader("Ângulo estratégico")
     st.write(pack["master_angle"])
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "Prompt mestre",
-        "Prompts por rede",
         "Estrutura",
-        "Visual e Canva",
+        "Visual",
         "Checklist"
     ])
 
     with tab1:
-        st.text_area("Prompt mestre para ChatGPT", pack["master_prompt"], height=320)
+        st.text_area("Prompt mestre para ChatGPT", pack["master_prompt"], height=420)
         st.download_button(
             "Descarregar prompt mestre",
             data=pack["master_prompt"].encode("utf-8"),
-            file_name="master_prompt.txt",
+            file_name="prompt_mestre_chatgpt.txt",
             mime="text/plain"
         )
 
     with tab2:
-        st.text_area("Instagram", pack["instagram_prompt"], height=220)
-        st.text_area("LinkedIn", pack["linkedin_prompt"], height=220)
-        st.text_area("Facebook", pack["facebook_prompt"], height=220)
-
-    with tab3:
         st.write("**Headlines sugeridas**")
         for item in pack["headlines"]:
             st.write(f"- {item}")
@@ -430,15 +410,14 @@ if pack:
         st.write("**Estrutura sugerida**")
         st.json(pack["structure"])
 
-    with tab4:
+    with tab3:
         st.text_area("Prompt visual geral", pack["visual_prompt"], height=260)
-
-        st.write("**Prompts para Canva por peça**")
+        st.write("**Prompts visuais por peça**")
         for item in pack["canva_prompts"]:
             st.markdown(f"### Peça {item['slide_number']} — {item['title']}")
             st.code(item["prompt"], language="text")
 
-    with tab5:
+    with tab4:
         for item in pack["publication_checklist"]:
             st.write(f"- {item}")
 
@@ -448,6 +427,6 @@ if pack:
     st.download_button(
         "Descarregar pack completo ZIP",
         data=zip_bytes,
-        file_name=f"defera_social_pack_{timestamp}.zip",
+        file_name=f"defera_prompt_pack_{timestamp}.zip",
         mime="application/zip"
     )
