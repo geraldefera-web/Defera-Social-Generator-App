@@ -1,5 +1,4 @@
 import streamlit as st
-from datetime import datetime
 
 
 st.set_page_config(
@@ -25,67 +24,201 @@ def default_num_images(post_type):
     return 3
 
 
-def build_structure(theme, post_type, num):
+def get_layout_format(post_type):
+    if post_type in ["Post único", "Carrossel"]:
+        return "1080 x 1350"
+    return "1080 x 1920"
+
+
+def build_hashtags(data):
     base = [
-        "Gancho",
-        "Contexto",
-        "Problema",
-        "Solução",
-        "Ação"
+        "#DEFERA",
+        "#MarketingDesportivo",
+        "#GestaoDesportiva",
+        "#Desporto",
+        "#Comunicacao",
+        "#RedesSociais"
     ]
+
+    if "clube" in data["audience"].lower() or "clubes" in data["audience"].lower():
+        base.append("#ClubesDesportivos")
+
+    if "estratégia" in data["theme"].lower() or "estrategia" in data["theme"].lower():
+        base.append("#EstrategiaDigital")
+
+    return " ".join(base[:8])
+
+
+def build_structure(theme, post_type, num, cta):
+    if post_type == "Post único":
+        return [
+            {
+                "piece_number": 1,
+                "label": "Peça única",
+                "title": theme,
+                "text": f"Mensagem central sobre {theme.lower()}",
+                "support_text": "",
+                "cta": cta,
+                "layout": "Título no topo esquerdo, texto principal ao centro/esquerda, área visual limpa do lado direito, CTA discreto no rodapé.",
+                "visual_goal": "Criar impacto imediato e reforçar o tema central."
+            }
+        ]
+
+    if post_type == "Carrossel":
+        base = [
+            {
+                "label": "Gancho",
+                "title": "O problema não é falta de esforço",
+                "text": f"Muitos agentes continuam a lidar com {theme.lower()} sem direção clara.",
+                "support_text": "",
+                "cta": "",
+                "layout": "Título no topo esquerdo, texto principal abaixo, imagem com espaço livre à esquerda.",
+                "visual_goal": "Criar impacto e captar atenção logo na primeira peça."
+            },
+            {
+                "label": "Contexto",
+                "title": "Publicar não chega",
+                "text": "Sem intenção estratégica, a comunicação perde força e consistência.",
+                "support_text": "",
+                "cta": "",
+                "layout": "Título no topo, texto principal a meio do lado esquerdo, fundo visual limpo.",
+                "visual_goal": "Mostrar enquadramento e contexto do problema."
+            },
+            {
+                "label": "Problema",
+                "title": "O custo é maior do que parece",
+                "text": "Menos notoriedade, menos ligação e menos capacidade para crescer.",
+                "support_text": "",
+                "cta": "",
+                "layout": "Título no topo esquerdo, texto central curto, composição forte com contraste elevado.",
+                "visual_goal": "Evidenciar consequências e criar tensão narrativa."
+            },
+            {
+                "label": "Solução",
+                "title": "Com estratégia, o jogo muda",
+                "text": "Comunicar melhor é criar valor, reforçar marca e gerar oportunidades.",
+                "support_text": "",
+                "cta": "",
+                "layout": "Título no topo, texto principal ao centro, espaço livre para leitura simples.",
+                "visual_goal": "Introduzir solução, clareza e sentido de caminho."
+            },
+            {
+                "label": "Ação",
+                "title": "A DEFERA pode ajudar",
+                "text": "Se quer comunicar com mais intenção, este pode ser o momento certo.",
+                "support_text": "",
+                "cta": cta,
+                "layout": "Título no topo esquerdo, texto principal ao centro, CTA no rodapé.",
+                "visual_goal": "Fechar a narrativa e conduzir à ação."
+            }
+        ]
+    else:
+        base = [
+            {
+                "label": "Abertura",
+                "title": theme,
+                "text": f"Introdução rápida sobre {theme.lower()}",
+                "support_text": "",
+                "cta": "",
+                "layout": "Título no topo, texto curto ao centro, imagem com bastante espaço negativo.",
+                "visual_goal": "Captar atenção rapidamente."
+            },
+            {
+                "label": "Desenvolvimento",
+                "title": "O que está em causa",
+                "text": "A forma como se comunica influencia a perceção de valor.",
+                "support_text": "",
+                "cta": "",
+                "layout": "Título no topo esquerdo, texto principal abaixo, leitura rápida.",
+                "visual_goal": "Desenvolver a narrativa com clareza."
+            },
+            {
+                "label": "Fecho",
+                "title": "É tempo de ajustar",
+                "text": "Mais intenção. Mais clareza. Mais impacto.",
+                "support_text": "",
+                "cta": cta,
+                "layout": "Título no topo, texto principal a meio, CTA no rodapé.",
+                "visual_goal": "Fechar com força e orientar para ação."
+            }
+        ]
 
     structure = []
     for i in range(num):
-        title = base[i] if i < len(base) else f"Slide {i+1}"
-        structure.append(f"{i+1}. {title} sobre {theme}")
+        if i < len(base):
+            item = base[i]
+        else:
+            item = {
+                "label": f"Peça {i+1}",
+                "title": f"Desenvolvimento {i+1}",
+                "text": f"Conteúdo complementar sobre {theme.lower()}",
+                "support_text": "",
+                "cta": "",
+                "layout": "Título no topo, texto principal ao centro, composição simples e limpa.",
+                "visual_goal": "Reforçar a continuidade da narrativa."
+            }
+
+        structure.append({
+            "piece_number": i + 1,
+            **item
+        })
+
     return structure
 
 
 def build_copy(data, structure):
+    hashtags = build_hashtags(data)
+    pieces_summary = "\n".join([f"- {item['title']}" for item in structure])
+
     copy = {}
 
     if "Instagram" in data["networks"]:
-        copy["Instagram"] = f"""
-{data['theme']}
+        copy["Instagram"] = f"""{data['theme']}
 
-Muitos clubes continuam a comunicar sem estratégia.
+Há quem continue a comunicar por rotina.
+Mas hoje isso já não chega.
 
-Publicar não é comunicar.
-Comunicar não é influenciar.
-E influenciar é o que gera crescimento.
+Quando falta direção, perde-se impacto, coerência e valor percebido.
 
-Se quer mais resultados, precisa de mais do que presença.
-Precisa de direção.
+Comunicar melhor não é publicar mais.
+É saber o que dizer, como dizer e para quem dizer.
 
-Fale com a DEFERA.
-"""
+Estrutura desta publicação
+{pieces_summary}
+
+{data['cta']}
+
+{hashtags}"""
 
     if "LinkedIn" in data["networks"]:
-        copy["LinkedIn"] = f"""
-No desporto, muitos clubes continuam a comunicar sem estratégia.
+        copy["LinkedIn"] = f"""No atual contexto desportivo, continua a existir um problema recorrente
 
-A presença digital existe.
-Mas a intenção estratégica não.
+{data['theme']}
 
-E isso reflete-se em três pontos críticos:
-- baixa perceção de valor
-- dificuldade em atrair parceiros
-- fraca ligação com a comunidade
+Em muitos casos, a comunicação existe, mas falta-lhe intenção estratégica.
+E isso tende a refletir-se em notoriedade, posicionamento e capacidade de gerar oportunidades.
 
-Comunicar bem não é publicar mais.
-É publicar com propósito.
+Uma presença digital consistente não depende apenas de frequência.
+Depende de clareza, coerência e propósito.
 
-Se faz sentido para o seu clube, vale a pena falar.
-"""
+Esta publicação desenvolve essa lógica em {len(structure)} peça(s)
+{pieces_summary}
+
+{data['cta']}
+
+{hashtags}"""
 
     if "Facebook" in data["networks"]:
-        copy["Facebook"] = f"""
-Muitos clubes continuam a comunicar sem estratégia.
+        copy["Facebook"] = f"""{data['theme']}
 
-E isso acaba por limitar o seu crescimento.
+Nem sempre o problema está na falta de vontade.
+Muitas vezes está na falta de direção.
 
-Hoje, comunicar bem faz toda a diferença.
-"""
+Comunicar melhor pode fazer toda a diferença.
+
+{data['cta']}
+
+{hashtags}"""
 
     return copy
 
@@ -93,89 +226,129 @@ Hoje, comunicar bem faz toda a diferença.
 def build_image_prompts(data, structure):
     prompts = []
 
-    for i, item in enumerate(structure):
-        prompt = f"""
-Imagem {i+1} de {len(structure)} para a marca DEFERA.
+    for item in structure:
+        prompt = f"""Criar imagem {item['piece_number']} de {len(structure)} para a marca DEFERA.
 
-Tema: {data['theme']}
+Tema geral:
+{data['theme']}
 
-Objetivo visual:
-{item}
+Função narrativa desta peça:
+{item['label']} — {item['visual_goal']}
 
-Estilo:
+Mensagem desta peça:
+{item['text']}
+
+Estilo visual:
 {data['visual_style']}
 
 Regras:
-- Fundo escuro ou visual premium
-- Estética desportiva e profissional
-- Alta qualidade
-- Sem texto na imagem
-- Coerência com as restantes imagens
+- fundo escuro ou visual premium
+- estética desportiva, moderna e profissional
+- contraste elevado
+- composição clean
+- sem texto na imagem
+- garantir espaço livre para lettering posterior
+- coerência visual com as restantes peças da publicação
+
+Formato recomendado:
+{get_layout_format(data['post_type'])}
 """
-        prompts.append(prompt.strip())
+        prompts.append(prompt)
 
     return prompts
 
 
-# UI
 st.title("DEFERA Content Generator")
+st.caption("Geração de copy final, hashtags, plano de lettering por imagem e prompts visuais")
 
-with st.form("form"):
-    objective = st.text_input("Objetivo")
-    theme = st.text_input("Tema")
-    audience = st.text_input("Público")
-    networks = st.multiselect("Redes", NETWORKS)
-    post_type = st.selectbox("Formato", POST_TYPES)
-    visual_style = st.selectbox("Estilo visual", VISUAL_STYLES)
+with st.form("content_form"):
+    col1, col2 = st.columns(2)
+
+    with col1:
+        objective = st.text_input("Objetivo", placeholder="Ex: gerar leads para serviços de marketing desportivo")
+        theme = st.text_input("Tema", placeholder="Ex: muitos clubes continuam a comunicar sem estratégia")
+        audience = st.text_input("Público", placeholder="Ex: clubes desportivos, dirigentes e responsáveis de comunicação")
+        networks = st.multiselect("Redes sociais", NETWORKS, default=["Instagram"])
+        post_type = st.selectbox("Formato", POST_TYPES)
+
+    with col2:
+        visual_style = st.selectbox("Estilo visual", VISUAL_STYLES)
+        cta = st.text_input("CTA", value="Fale com a DEFERA.")
+        context_notes = st.text_area("Notas adicionais", placeholder="Ex: foco em credibilidade, linguagem simples, tom profissional")
 
     num_images = st.slider(
         "Número de imagens",
-        1,
-        10,
-        default_num_images(post_type)
+        min_value=1,
+        max_value=10,
+        value=default_num_images(post_type)
     )
 
-    submitted = st.form_submit_button("Gerar")
+    submitted = st.form_submit_button("Gerar conteúdo")
 
 if submitted:
-    data = {
-        "objective": objective,
-        "theme": theme,
-        "audience": audience,
-        "networks": networks,
-        "post_type": post_type,
-        "visual_style": visual_style,
-        "num_images": num_images
-    }
+    if not objective or not theme or not audience:
+        st.error("Preencha pelo menos objetivo, tema e público.")
+    elif not networks:
+        st.error("Selecione pelo menos uma rede social.")
+    else:
+        data = {
+            "objective": objective,
+            "theme": theme,
+            "audience": audience,
+            "networks": networks,
+            "post_type": post_type,
+            "visual_style": visual_style,
+            "cta": cta,
+            "context_notes": context_notes,
+            "num_images": num_images
+        }
 
-    structure = build_structure(theme, post_type, num_images)
-    copy = build_copy(data, structure)
-    prompts = build_image_prompts(data, structure)
+        structure = build_structure(theme, post_type, num_images, cta)
+        copy = build_copy(data, structure)
+        prompts = build_image_prompts(data, structure)
+        layout_format = get_layout_format(post_type)
 
-    st.success("Conteúdo gerado")
+        st.success("Conteúdo gerado com sucesso.")
 
-    # COPY
-    st.subheader("Copy final")
+        tab1, tab2, tab3 = st.tabs(["Copy final", "Plano por imagem", "Prompts de imagem"])
 
-    for net, text in copy.items():
-        st.markdown(f"### {net}")
-        st.text_area("", text, height=200)
+        with tab1:
+            st.markdown(f"**Formato recomendado das artes:** {layout_format}")
 
-        st.download_button(
-            f"Descarregar {net}",
-            text,
-            file_name=f"{net}_copy.txt"
-        )
+            for net, text in copy.items():
+                st.markdown(f"### {net}")
+                st.text_area(f"Copy {net}", text, height=260, key=f"copy_{net}")
+                st.download_button(
+                    f"Descarregar copy {net}",
+                    text,
+                    file_name=f"{net.lower()}_copy.txt"
+                )
 
-    # PROMPTS
-    st.subheader("Prompts de imagem")
+        with tab2:
+            st.markdown(f"**Formato recomendado das artes:** {layout_format}")
 
-    for i, p in enumerate(prompts):
-        st.markdown(f"### Imagem {i+1}")
-        st.text_area("", p, height=150)
+            for item in structure:
+                st.markdown(f"### Imagem {item['piece_number']} — {item['label']}")
+                st.write(f"**Objetivo visual:** {item['visual_goal']}")
+                st.write(f"**Título a aplicar:** {item['title']}")
+                st.write(f"**Texto principal:** {item['text']}")
 
-        st.download_button(
-            f"Download imagem {i+1}",
-            p,
-            file_name=f"imagem_{i+1}.txt"
-        )
+                if item["support_text"]:
+                    st.write(f"**Texto de apoio:** {item['support_text']}")
+
+                if item["cta"]:
+                    st.write(f"**CTA na imagem:** {item['cta']}")
+
+                st.write(f"**Layout recomendado:** {item['layout']}")
+
+        with tab3:
+            st.markdown(f"**Formato recomendado das artes:** {layout_format}")
+
+            for i, p in enumerate(prompts):
+                st.markdown(f"### Prompt imagem {i+1}")
+                st.text_area(f"Prompt {i+1}", p, height=220, key=f"prompt_{i+1}")
+                st.download_button(
+                    f"Descarregar prompt imagem {i+1}",
+                    p,
+                    file_name=f"imagem_{i+1}_prompt.txt"
+                )
