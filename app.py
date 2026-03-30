@@ -40,10 +40,13 @@ def build_hashtags(data):
         "#RedesSociais"
     ]
 
-    if "clube" in data["audience"].lower() or "clubes" in data["audience"].lower():
+    audience = data["audience"].lower()
+    theme = data["theme"].lower()
+
+    if "clube" in audience or "clubes" in audience:
         base.append("#ClubesDesportivos")
 
-    if "estratégia" in data["theme"].lower() or "estrategia" in data["theme"].lower():
+    if "estratégia" in theme or "estrategia" in theme:
         base.append("#EstrategiaDigital")
 
     return " ".join(base[:8])
@@ -59,7 +62,7 @@ def build_structure(theme, post_type, num, cta):
                 "text": f"Mensagem central sobre {theme.lower()}",
                 "support_text": "",
                 "cta": cta,
-                "layout": "Título no topo esquerdo, texto principal ao centro/esquerda, área visual limpa do lado direito, CTA discreto no rodapé.",
+                "layout": "Título no topo esquerdo, texto principal ao centro ou à esquerda, área visual limpa do lado oposto, CTA discreto no rodapé.",
                 "visual_goal": "Criar impacto imediato e reforçar o tema central."
             }
         ]
@@ -69,7 +72,7 @@ def build_structure(theme, post_type, num, cta):
             {
                 "label": "Gancho",
                 "title": "O problema não é falta de esforço",
-                "text": f"Muitos agentes continuam a lidar com {theme.lower()} sem direção clara.",
+                "text": f"Muitos continuam a lidar com {theme.lower()} sem uma direção clara.",
                 "support_text": "",
                 "cta": "",
                 "layout": "Título no topo esquerdo, texto principal abaixo, imagem com espaço livre à esquerda.",
@@ -78,7 +81,7 @@ def build_structure(theme, post_type, num, cta):
             {
                 "label": "Contexto",
                 "title": "Publicar não chega",
-                "text": "Sem intenção estratégica, a comunicação perde força e consistência.",
+                "text": "Sem intenção, a comunicação perde força, consistência e valor.",
                 "support_text": "",
                 "cta": "",
                 "layout": "Título no topo, texto principal a meio do lado esquerdo, fundo visual limpo.",
@@ -87,7 +90,7 @@ def build_structure(theme, post_type, num, cta):
             {
                 "label": "Problema",
                 "title": "O custo é maior do que parece",
-                "text": "Menos notoriedade, menos ligação e menos capacidade para crescer.",
+                "text": "Perde-se ligação, impacto e capacidade para crescer com consistência.",
                 "support_text": "",
                 "cta": "",
                 "layout": "Título no topo esquerdo, texto central curto, composição forte com contraste elevado.",
@@ -96,7 +99,7 @@ def build_structure(theme, post_type, num, cta):
             {
                 "label": "Solução",
                 "title": "Com estratégia, o jogo muda",
-                "text": "Comunicar melhor é criar valor, reforçar marca e gerar oportunidades.",
+                "text": "Comunicar melhor é criar clareza, reforçar marca e abrir oportunidades.",
                 "support_text": "",
                 "cta": "",
                 "layout": "Título no topo, texto principal ao centro, espaço livre para leitura simples.",
@@ -105,7 +108,7 @@ def build_structure(theme, post_type, num, cta):
             {
                 "label": "Ação",
                 "title": "A DEFERA pode ajudar",
-                "text": "Se quer comunicar com mais intenção, este pode ser o momento certo.",
+                "text": "Se quer comunicar com mais intenção, este pode ser um bom momento para ajustar.",
                 "support_text": "",
                 "cta": cta,
                 "layout": "Título no topo esquerdo, texto principal ao centro, CTA no rodapé.",
@@ -126,7 +129,7 @@ def build_structure(theme, post_type, num, cta):
             {
                 "label": "Desenvolvimento",
                 "title": "O que está em causa",
-                "text": "A forma como se comunica influencia a perceção de valor.",
+                "text": "A forma como se comunica influencia diretamente a perceção de valor.",
                 "support_text": "",
                 "cta": "",
                 "layout": "Título no topo esquerdo, texto principal abaixo, leitura rápida.",
@@ -168,57 +171,45 @@ def build_structure(theme, post_type, num, cta):
 
 def build_copy(data, structure):
     hashtags = build_hashtags(data)
-    pieces_summary = "\n".join([f"- {item['title']}" for item in structure])
+    theme = data["theme"]
+    cta = data["cta"]
 
     copy = {}
 
     if "Instagram" in data["networks"]:
-        copy["Instagram"] = f"""{data['theme']}
-
-Há quem continue a comunicar por rotina.
-Mas hoje isso já não chega.
-
-Quando falta direção, perde-se impacto, coerência e valor percebido.
-
-Comunicar melhor não é publicar mais.
-É saber o que dizer, como dizer e para quem dizer.
-
-Estrutura desta publicação
-{pieces_summary}
-
-{data['cta']}
-
-{hashtags}"""
+        copy["Instagram"] = (
+            f"{theme}\n\n"
+            "Há quem continue a comunicar por rotina.\n"
+            "Mas hoje isso já não chega.\n\n"
+            "Quando falta direção, perde-se impacto, coerência e valor percebido.\n\n"
+            "Comunicar melhor não é publicar mais.\n"
+            "É saber o que dizer, como dizer e para quem dizer.\n\n"
+            f"{cta}\n\n"
+            f"{hashtags}"
+        )
 
     if "LinkedIn" in data["networks"]:
-        copy["LinkedIn"] = f"""No atual contexto desportivo, continua a existir um problema recorrente
-
-{data['theme']}
-
-Em muitos casos, a comunicação existe, mas falta-lhe intenção estratégica.
-E isso tende a refletir-se em notoriedade, posicionamento e capacidade de gerar oportunidades.
-
-Uma presença digital consistente não depende apenas de frequência.
-Depende de clareza, coerência e propósito.
-
-Esta publicação desenvolve essa lógica em {len(structure)} peça(s)
-{pieces_summary}
-
-{data['cta']}
-
-{hashtags}"""
+        copy["LinkedIn"] = (
+            f"{theme}\n\n"
+            "No desporto, continua a existir um padrão que limita o crescimento de muitas organizações.\n\n"
+            "A comunicação existe.\n"
+            "Mas nem sempre existe com intenção estratégica.\n\n"
+            "E quando isso acontece, perde-se clareza, consistência e capacidade para gerar valor.\n\n"
+            "Hoje, comunicar bem não é estar apenas presente.\n"
+            "É ser relevante.\n\n"
+            f"{cta}\n\n"
+            f"{hashtags}"
+        )
 
     if "Facebook" in data["networks"]:
-        copy["Facebook"] = f"""{data['theme']}
-
-Nem sempre o problema está na falta de vontade.
-Muitas vezes está na falta de direção.
-
-Comunicar melhor pode fazer toda a diferença.
-
-{data['cta']}
-
-{hashtags}"""
+        copy["Facebook"] = (
+            f"{theme}\n\n"
+            "Nem sempre o problema está na falta de vontade.\n"
+            "Muitas vezes está na falta de direção.\n\n"
+            "Comunicar melhor pode fazer toda a diferença.\n\n"
+            f"{cta}\n\n"
+            f"{hashtags}"
+        )
 
     return copy
 
