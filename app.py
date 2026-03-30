@@ -342,4 +342,98 @@ with st.form("planner_form"):
         tone = st.text_input("Tom pretendido", placeholder="Ex: próximo, confiante, profissional e claro")
         visual_style = st.selectbox("Estilo visual", VISUAL_STYLES)
         cta = st.selectbox("CTA principal", CTA_OPTIONS)
-        context_notes
+        context_notes = st.text_area("Notas adicionais", placeholder="Ex: evitar excesso de texto, foco em credibilidade")
+
+    num_images = st.slider(
+        "Número de peças/slides/frames",
+        min_value=1,
+        max_value=10,
+        value=default_num_images(post_type)
+    )
+
+    submitted = st.form_submit_button("Gerar prompts")
+
+if submitted:
+    if not objective or not theme or not audience:
+        st.error("Preencha pelo menos objetivo, tema e público.")
+    elif not networks:
+        st.error("Selecione pelo menos uma rede social.")
+    else:
+        data = {
+            "objective": objective,
+            "networks": networks,
+            "post_type": post_type,
+            "category": category,
+            "theme": theme,
+            "audience": audience,
+            "service_focus": service_focus if service_focus else "Posicionamento e comunicação da DEFERA",
+            "tone": tone if tone else "Próximo, profissional e claro",
+            "visual_style": visual_style,
+            "cta": cta,
+            "context_notes": context_notes if context_notes else "Manter coerência com a identidade da DEFERA",
+            "num_images": num_images,
+        }
+
+        st.session_state.generated_pack = build_pack(data)
+        st.success("Prompts gerados com sucesso.")
+
+pack = st.session_state.generated_pack
+
+if pack:
+    st.divider()
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Prompt Copy",
+        "Prompt Imagens Global",
+        "Prompts por Imagem",
+        "Checklist"
+    ])
+
+    with tab1:
+        st.text_area("Prompt para gerar copy", pack["copy_prompt"], height=420)
+        st.download_button(
+            "Descarregar Prompt Copy",
+            data=pack["copy_prompt"].encode("utf-8"),
+            file_name="prompt_copy.txt",
+            mime="text/plain"
+        )
+
+    with tab2:
+        st.text_area("Prompt global de referência visual", pack["global_image_prompt"], height=360)
+        st.download_button(
+            "Descarregar Prompt Imagens Global",
+            data=pack["global_image_prompt"].encode("utf-8"),
+            file_name="prompt_imagens_global.txt",
+            mime="text/plain"
+        )
+
+    with tab3:
+        for item in pack["individual_image_prompts"]:
+            st.markdown(f"### Imagem {item['piece_number']} — {item['title']}")
+            st.text_area(
+                f"Prompt imagem {item['piece_number']}",
+                item["prompt"],
+                height=260,
+                key=f"img_prompt_{item['piece_number']}"
+            )
+            st.download_button(
+                f"Descarregar Prompt Imagem {item['piece_number']}",
+                data=item["prompt"].encode("utf-8"),
+                file_name=f"prompt_imagem_{item['piece_number']}.txt",
+                mime="text/plain",
+                key=f"download_img_prompt_{item['piece_number']}"
+            )
+
+    with tab4:
+        for item in pack["publication_checklist"]:
+            st.write(f"- {item}")
+
+    zip_bytes = build_zip_bytes(pack)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    st.download_button(
+        "Descarregar pack completo ZIP",
+        data=zip_bytes,
+        file_name=f"defera_prompts_{timestamp}.zip",
+        mime="application/zip"
+    )
