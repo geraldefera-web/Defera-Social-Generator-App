@@ -130,13 +130,13 @@ def build_structure(data):
     return structure
 
 
-def build_image_prompt(data, structure):
+def build_global_image_prompt(data, structure):
     pieces_text = "\n".join(
         [f"{item['piece_number']}. {item['title']} — {item['message']}" for item in structure]
     )
 
     return f"""
-Cria imagens para uma publicação da marca DEFERA.
+Cria a direção visual de uma publicação da marca DEFERA.
 
 Contexto da marca:
 - Marca: {DEFERA_BRAND_GUIDE['marca']}
@@ -154,7 +154,6 @@ Briefing:
 - Notas adicionais: {data['context_notes']}
 
 Instruções obrigatórias:
-- Gerar exatamente {data['num_images']} imagens
 - As imagens devem manter coerência visual entre si
 - Fundo preferencialmente escuro ou visual premium compatível com a identidade da DEFERA
 - Estética clean, contraste elevado e linguagem ligada ao desporto, marketing e performance
@@ -163,10 +162,57 @@ Instruções obrigatórias:
 
 Estrutura visual:
 {pieces_text}
-
-Entrega:
-- Gera as imagens com coerência entre si, respeitando a ordem narrativa indicada
 """.strip()
+
+
+def build_individual_image_prompts(data, structure):
+    prompts = []
+    total = len(structure)
+
+    narrative = "\n".join(
+        [f"{item['piece_number']}. {item['title']} — {item['message']}" for item in structure]
+    )
+
+    for item in structure:
+        prompt = f"""
+Cria a imagem {item['piece_number']} de {total} para uma publicação da marca DEFERA.
+
+Objetivo desta imagem:
+- {item['title']}
+- {item['message']}
+
+Contexto global da publicação:
+- Tema: {data['theme']}
+- Formato: {data['post_type']}
+- Público-alvo: {data['audience']}
+- Categoria: {data['category']}
+- Estilo visual: {data['visual_style']}
+- Identidade da marca: {DEFERA_BRAND_GUIDE['visual']}
+- Notas adicionais: {data['context_notes']}
+
+Regras obrigatórias:
+- Esta imagem deve parecer parte da mesma série visual das restantes
+- Manter coerência estética com as outras imagens da publicação
+- Ambiente premium, moderno, ligado ao desporto, marketing e performance
+- Fundo escuro ou linguagem visual coerente com a DEFERA
+- Contraste elevado
+- Composição clean
+- Sem texto dentro da imagem
+- A imagem deve transmitir claramente a função narrativa desta peça
+
+Narrativa completa da série:
+{narrative}
+
+Agora gera apenas a imagem {item['piece_number']} de {total}, respeitando a coerência com o conjunto.
+""".strip()
+
+        prompts.append({
+            "piece_number": item["piece_number"],
+            "title": item["title"],
+            "prompt": prompt
+        })
+
+    return prompts
 
 
 def build_copy_prompt(data, structure):
@@ -224,8 +270,8 @@ Regras:
 
 def build_publication_checklist():
     return [
-        "Gerar as imagens com o Prompt Imagens",
         "Gerar o copy com o Prompt Copy",
+        "Gerar cada imagem separadamente com o respetivo Prompt Imagem",
         "Confirmar coerência entre copy e narrativa visual",
         "Validar se o copy está adaptado a cada rede selecionada",
         "Rever ortografia e legibilidade final",
@@ -239,7 +285,8 @@ def build_pack(data):
 
     return {
         "structure": structure,
-        "image_prompt": build_image_prompt(data, structure),
+        "global_image_prompt": build_global_image_prompt(data, structure),
+        "individual_image_prompts": build_individual_image_prompts(data, structure),
         "copy_prompt": build_copy_prompt(data, structure),
         "publication_checklist": build_publication_checklist(),
     }
@@ -250,9 +297,15 @@ def build_zip_bytes(pack):
 
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("pack_completo.json", json.dumps(pack, ensure_ascii=False, indent=2))
-        zf.writestr("01_prompt_imagens.txt", pack["image_prompt"])
-        zf.writestr("02_prompt_copy.txt", pack["copy_prompt"])
+        zf.writestr("01_prompt_copy.txt", pack["copy_prompt"])
+        zf.writestr("02_prompt_imagens_global.txt", pack["global_image_prompt"])
         zf.writestr("03_checklist_publicacao.txt", "\n".join(pack["publication_checklist"]))
+
+        for item in pack["individual_image_prompts"]:
+            zf.writestr(
+                f"prompts_imagens/imagem_{item['piece_number']}.txt",
+                item["prompt"]
+            )
 
     buffer.seek(0)
     return buffer.read()
@@ -261,17 +314,16 @@ def build_zip_bytes(pack):
 init_state()
 
 st.title("DEFERA Social Planner")
-st.caption("Ferramenta para gerar um Prompt Imagens e um Prompt Copy, ajustados ao briefing preenchido")
+st.caption("Ferramenta para gerar 1 Prompt Copy e 1 prompt individual por cada imagem/slide")
 
 with st.sidebar:
     st.subheader("Modo de utilização")
     st.write(
         "1. Preencher o briefing\n"
-        "2. Selecionar uma ou várias redes sociais\n"
-        "3. Gerar os prompts\n"
-        "4. Colar o Prompt Imagens no ChatGPT Imagens\n"
-        "5. Colar o Prompt Copy no ChatGPT texto\n"
-        "6. Ajustar e publicar manualmente"
+        "2. Gerar os prompts\n"
+        "3. Colar o Prompt Copy no ChatGPT texto\n"
+        "4. Gerar cada imagem separadamente com o respetivo prompt\n"
+        "5. Publicar manualmente"
     )
 
 with st.form("planner_form"):
@@ -331,22 +383,13 @@ if pack:
     st.divider()
 
     tab1, tab2, tab3, tab4 = st.tabs([
-        "Prompt Imagens",
         "Prompt Copy",
-        "Estrutura",
+        "Prompt Imagens Global",
+        "Prompts por Imagem",
         "Checklist"
     ])
 
     with tab1:
-        st.text_area("Prompt para gerar imagens", pack["image_prompt"], height=420)
-        st.download_button(
-            "Descarregar Prompt Imagens",
-            data=pack["image_prompt"].encode("utf-8"),
-            file_name="prompt_imagens.txt",
-            mime="text/plain"
-        )
-
-    with tab2:
         st.text_area("Prompt para gerar copy", pack["copy_prompt"], height=420)
         st.download_button(
             "Descarregar Prompt Copy",
@@ -355,9 +398,31 @@ if pack:
             mime="text/plain"
         )
 
+    with tab2:
+        st.text_area("Prompt global de referência visual", pack["global_image_prompt"], height=360)
+        st.download_button(
+            "Descarregar Prompt Imagens Global",
+            data=pack["global_image_prompt"].encode("utf-8"),
+            file_name="prompt_imagens_global.txt",
+            mime="text/plain"
+        )
+
     with tab3:
-        st.write("**Estrutura sugerida da publicação**")
-        st.json(pack["structure"])
+        for item in pack["individual_image_prompts"]:
+            st.markdown(f"### Imagem {item['piece_number']} — {item['title']}")
+            st.text_area(
+                f"Prompt imagem {item['piece_number']}",
+                item["prompt"],
+                height=260,
+                key=f"img_prompt_{item['piece_number']}"
+            )
+            st.download_button(
+                f"Descarregar Prompt Imagem {item['piece_number']}",
+                data=item["prompt"].encode("utf-8"),
+                file_name=f"prompt_imagem_{item['piece_number']}.txt",
+                mime="text/plain",
+                key=f"download_img_prompt_{item['piece_number']}"
+            )
 
     with tab4:
         for item in pack["publication_checklist"]:
